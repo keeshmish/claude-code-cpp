@@ -44,31 +44,6 @@ int main(int argc, char *argv[])
                                                                                                                                           }}}}
 
                   }})}};
-    json tool_calls = {
-        {
-            "choices" : [
-                {
-                    "index" : 0,
-                    "message" : {
-                        "role" : "assistant",
-                        "content" : null,
-                        "tool_calls" : [
-                            {
-                                "id" : "call_abc123",
-                                "type" : "function",
-                                "function" : {
-                                    "name" : "Read",
-                                    "arguments" : "{\"file_path\": \"/path/to/file.txt\"}"
-                                }
-                            }
-                        ]
-                    },
-                    "finish_reason" : "tool_calls"
-                }
-            ]
-        }
-
-    }
 
     cpr::Response response = cpr::Post(cpr::Url{base_url + "/chat/completions"}, cpr::Header{{"Authorization", "Bearer " + api_key}, {"Content-Type", "application/json"}}, cpr::Body{request_body.dump()});
 
@@ -85,12 +60,26 @@ int main(int argc, char *argv[])
         std::cerr << "No choices in response" << std::endl;
         return 1;
     }
+    json message = result["choices"][0]["message"];
 
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    std::cerr << "Logs from your program will appear here!" << std::endl;
-
-    // TODO: Uncomment the line below to pass the first stage
-    std::cout << result["choices"][0]["message"]["content"].get<std::string>();
-
+    if (message.contains("tool_calls") && !message["tool_calls"].empty())
+    {
+        json tc = message["tool_calls"][0];
+        std::string args = tc["function"]["arguments"];
+        std::string file_path = json::parse(args)["file_path"];
+        std::system(("cat " + file_path).c_str());
+    }
+    else
+    {
+        std::cout << message["content"].get<std::string>();
+    }
     return 0;
 }
+
+// You can use print statements as follows for debugging, they'll be visible when running tests.
+// std::cerr << "Logs from your program will appear here!" << std::endl;
+
+// TODO: Uncomment the line below to pass the first stage
+// std::cout << result["choices"][0]["message"]["content"].get<std::string>();
+
+// return 0;
