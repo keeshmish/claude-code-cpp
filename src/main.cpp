@@ -44,13 +44,33 @@ int main(int argc, char *argv[])
                                                                                                                                           }}}}
 
                   }})}};
+    json tool_calls = {
+        {
+            "choices" : [
+                {
+                    "index" : 0,
+                    "message" : {
+                        "role" : "assistant",
+                        "content" : null,
+                        "tool_calls" : [
+                            {
+                                "id" : "call_abc123",
+                                "type" : "function",
+                                "function" : {
+                                    "name" : "Read",
+                                    "arguments" : "{\"file_path\": \"/path/to/file.txt\"}"
+                                }
+                            }
+                        ]
+                    },
+                    "finish_reason" : "tool_calls"
+                }
+            ]
+        }
 
-    cpr::Response response = cpr::Post(
-        cpr::Url{base_url + "/chat/completions"},
-        cpr::Header{
-            {"Authorization", "Bearer " + api_key},
-            {"Content-Type", "application/json"}},
-        cpr::Body{request_body.dump()});
+    }
+
+    cpr::Response response = cpr::Post(cpr::Url{base_url + "/chat/completions"}, cpr::Header{{"Authorization", "Bearer " + api_key}, {"Content-Type", "application/json"}}, cpr::Body{request_body.dump()});
 
     if (response.status_code != 200)
     {
