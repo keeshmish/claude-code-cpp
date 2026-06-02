@@ -34,16 +34,18 @@ int main(int argc, char *argv[])
         std::cerr << "OPENROUTER_API_KEY is not set" << std::endl;
         return 1;
     }
+    while (true)
+    {
+        json request_body = {
+            {"model", "anthropic/claude-haiku-4.5"},
+            {"messages", json::array({{{"role", "user"}, {"content", prompt}}})},
+            {"tools", json::array({{{"type", "function"},
+                                    {"function", {{"name", "Read"}, {"description", "Read and return the contents of a file"}, {"parameters", {{"type", "object"}, {"properties", {{"file_path", {{"type", "string"}, {"description", "The path to the file to read"}}}}}, {"required", json::array({"file_path"})}
 
-    json request_body = {
-        {"model", "anthropic/claude-haiku-4.5"},
-        {"messages", json::array({{{"role", "user"}, {"content", prompt}}})},
-        {"tools", json::array({{{"type", "function"},
-                                {"function", {{"name", "Read"}, {"description", "Read and return the contents of a file"}, {"parameters", {{"type", "object"}, {"properties", {{"file_path", {{"type", "string"}, {"description", "The path to the file to read"}}}}}, {"required", json::array({"file_path"})}
+                                                                                                                                              }}}}
 
-                                                                                                                                          }}}}
-
-                  }})}};
+                      }})}};
+    }
 
     cpr::Response response = cpr::Post(cpr::Url{base_url + "/chat/completions"}, cpr::Header{{"Authorization", "Bearer " + api_key}, {"Content-Type", "application/json"}}, cpr::Body{request_body.dump()});
 
@@ -62,16 +64,24 @@ int main(int argc, char *argv[])
     }
     json message = result["choices"][0]["message"];
 
-    if (message.contains("tool_calls") && !message["tool_calls"].empty())
+    messages.push_back(message);
+
+    if (message.contains("tool_calls") && !message["tool_calls"].empty()) // modify this later on
     {
         json tc = message["tool_calls"][0];
         std::string args = tc["function"]["arguments"];
         std::string file_path = json::parse(args)["file_path"];
-        std::system(("cat " + file_path).c_str());
+        std::system(("cat " + file_path).c_str()); // need to convert this in C, to use the std::system
+
+        messages.push_back({
+            {"role", "tool"},
+            {"tool call id", tool_cal["id"].get<std::String>()},
+            {"content", content},
+        });
     }
     else
     {
-        std::cout << message["content"].get<std::string>();
+        std::cout << result["choices"][0]["message"]["content"].get<std::string>();
     }
     return 0;
 }
