@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 
         if (message.contains("tool_calls") && !message["tool_calls"].empty())
         {
-            for (const auto &tc : message["tool_calls"].empty)
+            for (const auto &tc : message["tool_calls"])
             {
                 string name = tc["function"]["name"];
                 string args = tc["function"]["arguments"];
