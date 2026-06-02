@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <fstream>
 
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
@@ -34,6 +35,7 @@ int main(int argc, char *argv[])
         std::cerr << "OPENROUTER_API_KEY is not set" << std::endl;
         return 1;
     }
+    json messages = json::array({{{"role", "user"}, {"content", prompt}}});
     while (true)
     {
         json request_body = {
@@ -70,11 +72,13 @@ int main(int argc, char *argv[])
             json tc = message["tool_calls"][0];
             std::string args = tc["function"]["arguments"];
             std::string file_path = json::parse(args)["file_path"];
-            std::system(("cat " + file_path).c_str()); // need to convert this in C, to use the std::system
+            std::ifstream file(file_path);
+            std::string content{std::istreambuf_iterator<char>(file),
+                                std::istreambuf_iterator<char>()};
 
             messages.push_back({
                 {"role", "tool"},
-                {"tool_call_id", tool_call["id"].get<std::string>()},
+                {"tool_call_id", tc["id"].get<std::string>()},
                 {"content", content},
             });
         }
