@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-
+using namespace std;
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
@@ -65,28 +65,37 @@ int main(int argc, char *argv[])
 
     messages.push_back(message);
 
-    if (message.contains("tool_calls") && !message["tool_calls"].empty()) // modify this later on
+    if (message.contains("tool_calls") && !message["tool_calls"].empty())
     {
-        for (const auto &tc : message["tool_calls"])
+        for (const auto &tc : message["tool_calls"].empty)
         {
-
-            json tc = message["tool_calls"][0];
-            std::string args = tc["function"]["arguments"];
-            std::string file_path = json::parse(args)["file_path"];
-            std::ifstream file(file_path);
-            std::string content{std::istreambuf_iterator<char>(file),
-                                std::istreambuf_iterator<char>()};
+            string name = tc["function"]["name"];
+            string args = tc["function"]["arguments"];
+            string content;
+            if (name == "Read")
+            {
+                string file_path = json::parse(args)["file_path"];
+                string ifstream file(file_path);
+                if (!file)
+                {
+                    content = "error: could not open file" + file_path;
+                }
+                else
+                {
+                    content = string(istreamf_iterator<char>(file), istreambuf_iterator<char>());
+                }
+            }
 
             messages.push_back({
                 {"role", "tool"},
-                {"tool_call_id", tc["id"].get<std::string>()},
+                {"tool_call_id", tc["id"].get<string>()},
                 {"content", content},
             });
         }
     }
     else
     {
-        std::cout << result["choices"][0]["message"]["content"].get<std::string>();
+        cout << message["content"].get<string>();
         break;
     }
 
