@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
         messages.push_back({
             {"role", "tool"},
-            {"tool call id", tool_call["id"].get<std::string>()},
+            {"tool_call_id", tool_call["id"].get<std::string>()},
             {"content", content},
         });
     }
