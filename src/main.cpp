@@ -45,43 +45,44 @@ int main(int argc, char *argv[])
                                                                                                                                               }}}}
 
                       }})}};
-    }
 
-    cpr::Response response = cpr::Post(cpr::Url{base_url + "/chat/completions"}, cpr::Header{{"Authorization", "Bearer " + api_key}, {"Content-Type", "application/json"}}, cpr::Body{request_body.dump()});
+        cpr::Response response = cpr::Post(cpr::Url{base_url + "/chat/completions"}, cpr::Header{{"Authorization", "Bearer " + api_key}, {"Content-Type", "application/json"}}, cpr::Body{request_body.dump()});
 
-    if (response.status_code != 200)
-    {
-        std::cerr << "HTTP error: " << response.status_code << std::endl;
-        return 1;
-    }
+        if (response.status_code != 200)
+        {
+            std::cerr << "HTTP error: " << response.status_code << std::endl;
+            return 1;
+        }
 
-    json result = json::parse(response.text);
+        json result = json::parse(response.text);
 
-    if (!result.contains("choices") || result["choices"].empty())
-    {
-        std::cerr << "No choices in response" << std::endl;
-        return 1;
-    }
-    json message = result["choices"][0]["message"];
+        if (!result.contains("choices") || result["choices"].empty())
+        {
+            std::cerr << "No choices in response" << std::endl;
+            return 1;
+        }
+        json message = result["choices"][0]["message"];
 
-    messages.push_back(message);
+        messages.push_back(message);
 
-    if (message.contains("tool_calls") && !message["tool_calls"].empty()) // modify this later on
-    {
-        json tc = message["tool_calls"][0];
-        std::string args = tc["function"]["arguments"];
-        std::string file_path = json::parse(args)["file_path"];
-        std::system(("cat " + file_path).c_str()); // need to convert this in C, to use the std::system
+        if (message.contains("tool_calls") && !message["tool_calls"].empty()) // modify this later on
+        {
+            json tc = message["tool_calls"][0];
+            std::string args = tc["function"]["arguments"];
+            std::string file_path = json::parse(args)["file_path"];
+            std::system(("cat " + file_path).c_str()); // need to convert this in C, to use the std::system
 
-        messages.push_back({
-            {"role", "tool"},
-            {"tool_call_id", tool_call["id"].get<std::string>()},
-            {"content", content},
-        });
-    }
-    else
-    {
-        std::cout << result["choices"][0]["message"]["content"].get<std::string>();
+            messages.push_back({
+                {"role", "tool"},
+                {"tool_call_id", tool_call["id"].get<std::string>()},
+                {"content", content},
+            });
+        }
+        else
+        {
+            std::cout << result["choices"][0]["message"]["content"].get<std::string>();
+            break
+        }
     }
     return 0;
 }
