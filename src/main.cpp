@@ -36,69 +36,71 @@ int main(int argc, char *argv[])
         return 1;
     }
     json messages = json::array({{{"role", "user"}, {"content", prompt}}});
-    json request_body = {
-        {"model", "anthropic/claude-haiku-4.5"},
-        {"messages", json::array({{{"role", "user"}, {"content", prompt}}})},
-        {"tools", json::array({{{"type", "function"},
-                                {"function", {{"name", "Read"}, {"description", "Read and return the contents of a file"}, {"parameters", {{"type", "object"}, {"properties", {{"file_path", {{"type", "string"}, {"description", "The path to the file to read"}}}}}, {"required", json::array({"file_path"})}
-
-                                                                                                                                          }}}}
-
-                  }})}};
-
-    cpr::Response response = cpr::Post(cpr::Url{base_url + "/chat/completions"}, cpr::Header{{"Authorization", "Bearer " + api_key}, {"Content-Type", "application/json"}}, cpr::Body{request_body.dump()});
-
-    if (response.status_code != 200)
+    while (true)
     {
-        std::cerr << "HTTP error: " << response.status_code << std::endl;
-        return 1;
-    }
+        json request_body = {
+            {"model", "anthropic/claude-haiku-4.5"},
+            {"messages", messages},
+            {"tools", json::array({{{"type", "function"},
+                                    {"function", {{"name", "Read"}, {"description", "Read and return the contents of a file"}, {"parameters", {{"type", "object"}, {"properties", {{"file_path", {{"type", "string"}, {"description", "The path to the file to read"}}}}}, {"required", json::array({"file_path"})}
 
-    json result = json::parse(response.text);
+                                                                                                                                              }}}}
 
-    if (!result.contains("choices") || result["choices"].empty())
-    {
-        std::cerr << "No choices in response" << std::endl;
-        return 1;
-    }
-    json message = result["choices"][0]["message"];
+                      }})}};
 
-    messages.push_back(message);
+        cpr::Response response = cpr::Post(cpr::Url{base_url + "/chat/completions"}, cpr::Header{{"Authorization", "Bearer " + api_key}, {"Content-Type", "application/json"}}, cpr::Body{request_body.dump()});
 
-    if (message.contains("tool_calls") && !message["tool_calls"].empty())
-    {
-        for (const auto &tc : message["tool_calls"].empty)
+        if (response.status_code != 200)
         {
-            string name = tc["function"]["name"];
-            string args = tc["function"]["arguments"];
-            string content;
-            if (name == "Read")
-            {
-                string file_path = json::parse(args)["file_path"];
-                string ifstream file(file_path);
-                if (!file)
-                {
-                    content = "error: could not open file" + file_path;
-                }
-                else
-                {
-                    content = string(istreamf_iterator<char>(file), istreambuf_iterator<char>());
-                }
-            }
+            std::cerr << "HTTP error: " << response.status_code << std::endl;
+            return 1;
+        }
 
-            messages.push_back({
-                {"role", "tool"},
-                {"tool_call_id", tc["id"].get<string>()},
-                {"content", content},
-            });
+        json result = json::parse(response.text);
+
+        if (!result.contains("choices") || result["choices"].empty())
+        {
+            std::cerr << "No choices in response" << std::endl;
+            return 1;
+        }
+        json message = result["choices"][0]["message"];
+
+        messages.push_back(message);
+
+        if (message.contains("tool_calls") && !message["tool_calls"].empty())
+        {
+            for (const auto &tc : message["tool_calls"].empty)
+            {
+                string name = tc["function"]["name"];
+                string args = tc["function"]["arguments"];
+                string content;
+                if (name == "Read")
+                {
+                    string file_path = json::parse(args)["file_path"];
+                    ifstream file(file_path);
+                    if (!file)
+                    {
+                        content = "error: could not open file" + file_path;
+                    }
+                    else
+                    {
+                        content = string(istreambuf_iterator<char>(file), istreambuf_iterator<char>());
+                    }
+                }
+
+                messages.push_back({
+                    {"role", "tool"},
+                    {"tool_call_id", tc["id"].get<string>()},
+                    {"content", content},
+                });
+            }
+        }
+        else
+        {
+            cout << message["content"].get<string>();
+            break;
         }
     }
-    else
-    {
-        cout << message["content"].get<string>();
-        break;
-    }
-
     return 0;
 }
 
