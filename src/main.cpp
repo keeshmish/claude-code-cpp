@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
         else
         {
             std::cout << result["choices"][0]["message"]["content"].get<std::string>();
-            break
+            break;
         }
     }
     return 0;
