@@ -41,12 +41,27 @@ int main(int argc, char *argv[])
         json request_body = {
             {"model", "anthropic/claude-haiku-4.5"},
             {"messages", messages},
-            {"tools", json::array({{{"type", "function"},
-                                    {"function", {{"name", "Read"}, {"description", "Read and return the contents of a file"}, {"parameters", {{"type", "object"}, {"properties", {{"file_path", {{"type", "string"}, {"description", "The path to the file to read"}}}}}, {"required", json::array({"file_path"})}
+            {"tools", json::array({
+                {
+                {"type", "function"},
+                                    {"function", {{"name", "Read"}, 
+                                                    {"description", "Read and return the contents of a file"}, 
+                                                            {"parameters", 
+                                                                 {{"type", "object"}, {"properties", 
+                                                                    {{"file_path", {{"type", "string"}, {"description", "The path to the file to read"}}}}}, 
+                                                                    {"required", json::array({"file_path"})}
 
-                                                                                                                                              }}}}
-
-                      }})}};
+                                                                                                                                              }}}}},  
+               {
+                {"type", "function"},
+                                    {"function", {{"name", "Write"}, 
+                                                    {"description", "Write content to a file"}, 
+                                                            {"parameters", 
+                                                                 {{"type", "object"}, {"properties", 
+                                                                    {{"file_path", {{"type", "string"}, {"description", "The path to the file to write to"}}},
+                                                                     {"content", {{"type", "string"}, {"description", "The content to write to the file"}}}}}, 
+                                                                    {"required", json::array({"file_path", "content"})}
+                                                                                                                                              }}}}})}};
 
         cpr::Response response = cpr::Post(cpr::Url{base_url + "/chat/completions"}, cpr::Header{{"Authorization", "Bearer " + api_key}, {"Content-Type", "application/json"}}, cpr::Body{request_body.dump()});
 
@@ -88,6 +103,18 @@ int main(int argc, char *argv[])
                     }
                 }
 
+                else if (name == "Write")
+                {
+                    json parsed = json::parse(args);
+                    string file_path = parsed["file_path"];
+                    string file_content = parsed["content"];
+
+                    ofstream file(file_path);
+                    file << file_content;
+                    file.close();
+                    content = "File written successfully";
+                }
+
                 messages.push_back({
                     {"role", "tool"},
                     {"tool_call_id", tc["id"].get<string>()},
@@ -103,11 +130,3 @@ int main(int argc, char *argv[])
     }
     return 0;
 }
-
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-// std::cerr << "Logs from your program will appear here!" << std::endl;
-
-// TODO: Uncomment the line below to pass the first stage
-// std::cout << result["choices"][0]["message"]["content"].get<std::string>();
-
-// return 0;
